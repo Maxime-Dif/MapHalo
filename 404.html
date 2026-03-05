@@ -9,7 +9,7 @@ const path = window.location.pathname;
 const parts = path.replace(/\/+$/, '').split('/');
 const last = parts[parts.length - 1];
 if(last && last !== 'MapHalo'){
-  window.location.replace('/MapHalos/?rowid=' + encodeURIComponent(last));
+  window.location.replace('/MapHalo/?rowid=' + encodeURIComponent(last));
 } else {
   window.location.replace('/MapHalo/');
 }
