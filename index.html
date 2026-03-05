@@ -19,7 +19,7 @@
 }
 html,body{height:100%;width:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--surface);}
 
-#map{position:absolute;top:0;left:0;right:0;height:63%;}
+#map{position:absolute;top:0;left:0;right:0;height:55%;}
 
 /* LOADER */
 #loader-overlay{
@@ -59,7 +59,7 @@ html,body{height:100%;width:100%;overflow:hidden;font-family:'DM Sans',sans-seri
 
 /* FILTRES */
 #filters-bar{
-  position:absolute;top:63%;left:0;right:0;z-index:800;
+  position:absolute;top:55%;left:0;right:0;z-index:800;
   display:flex;gap:8px;padding:10px 14px 8px;
   background:var(--surface);
   border-bottom:1px solid var(--border);
@@ -86,10 +86,9 @@ select.filter-chip{
 #street-selector{
   position:absolute;left:0;right:0;bottom:0;z-index:810;
   background:transparent;
-  height:auto;
 }
 #street-selector.expanded{
-  top:calc(63% + 46px);
+  top:calc(55% + 46px);
   background:#fff;
   box-shadow:0 -4px 24px rgba(0,0,0,.1);
   overflow:hidden;
