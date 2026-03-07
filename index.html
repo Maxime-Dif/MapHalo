@@ -384,7 +384,7 @@ async function init(){
     } else {
       const nameChip=document.createElement('span');
       nameChip.style.cssText='font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;flex-shrink:0;padding:0 4px;';
-      nameChip.textContent='👤 '+currentUserName;
+      nameChip.textContent=currentUserName;
       const bar=document.getElementById('filters-bar');
       bar.insertBefore(nameChip,bar.firstChild);
       allZones=allZones.filter(z=>z.userName===currentUserName);
