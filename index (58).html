@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Prospéo — Halos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--accent:#f07020;--green:#22c55e;--surface:#fffcf7;--ink:#1a1208;--ink2:#6b5e45;--border:#e0d5c0;}
+html,body{height:100dvh;width:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--surface);}
+#app{display:flex;flex-direction:column;height:100dvh;width:100%;}
+#map-wrap{flex-shrink:0;height:55%;position:relative;}
+#map{position:absolute;inset:0;}
+#filters-bar{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 14px;height:46px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;}
+#filters-bar::-webkit-scrollbar{display:none;}
+.filter-chip{all:unset;background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--ink2);cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif;}
+select.filter-chip{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b5e45'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-color:#fff;}
+#selector-title{flex-shrink:0;font-family:'DM Serif Display',serif;font-size:15px;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;user-select:none;background:#f9f5ee;padding:11px 14px;border-top:1px solid var(--border);transition:background .15s;}
+#selector-title:hover{background:#f0ebe0;}
+.selector-badge{background:var(--accent);color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;}
+#street-list{flex:1;overflow-y:auto;background:transparent;padding:6px 8px 16px;display:none;}
+#street-list.open{display:block;}
+.street-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:background .12s;}
+.street-item:hover{background:#f9f5ee;}
+.street-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.street-dot.orange{background:var(--accent);box-shadow:0 0 0 3px rgba(240,112,32,.25);}
+.street-dot.green{background:var(--green);box-shadow:0 0 0 3px rgba(34,197,94,.25);}
+.street-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.street-name{font-size:14px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.street-meta{font-size:11px;color:var(--ink2);}
+#style-switcher{position:absolute;top:14px;right:14px;z-index:900;display:flex;flex-direction:column;gap:6px;}
+.style-btn{all:unset;background:rgba(255,255,255,.92);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:all .15s;}
+.style-btn.active{background:var(--accent);color:#fff;}
+#legend{position:absolute;bottom:6px;left:14px;z-index:900;background:rgba(255,255,255,.9);border-radius:8px;padding:5px 10px;box-shadow:0 2px 6px rgba(0,0,0,.12);display:flex;gap:12px;}
+.legend-row{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ink2);}
+.legend-dot{width:9px;height:9px;border-radius:50%;}
+@keyframes halo-pulse{
+  0%,100%{opacity:.95;transform:translate(-50%,-50%) scale(1);}
+  50%{opacity:.2;transform:translate(-50%,-50%) scale(1.1);}
+}
+.halo-el{
+  animation:halo-pulse 1.6s ease-in-out infinite;
+}
+#loader-overlay{position:absolute;inset:0;z-index:2000;background:rgba(255,252,247,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.loader-ring{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loader-text{font-size:14px;color:var(--ink2);}
+#access-denied{position:absolute;inset:0;z-index:3000;background:var(--surface);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:32px;}
+#access-denied .icon{font-size:52px;}
+#access-denied h2{font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);}
+#access-denied p{font-size:14px;color:var(--ink2);max-width:280px;}
+.maplibregl-popup-content{font-family:'DM Sans',sans-serif;padding:8px 14px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.18);}
+.maplibregl-popup-tip{display:none;}
+.popup-label{font-size:13px;font-weight:600;color:#1a1208;line-height:1.3;}
+.popup-meta{font-size:11px;color:#6b5e45;margin-top:3px;}
+#settings-panel{position:absolute;inset:0;z-index:1500;background:var(--surface);display:none;flex-direction:column;padding:28px 20px 32px;gap:24px;overflow-y:auto;}
+#settings-panel h2{font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);}
+.settings-section{display:flex;flex-direction:column;gap:10px;}
+.settings-label{font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.6px;}
+.settings-desc{font-size:13px;color:var(--ink2);line-height:1.5;}
+.months-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+.month-btn{all:unset;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:9px 16px;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.month-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+#btn-settings-close{all:unset;background:var(--accent);color:#fff;padding:14px;border-radius:14px;text-align:center;font-weight:600;font-size:15px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map-wrap">
+    <div id="map"></div>
+    <div id="style-switcher">
+      <button class="style-btn active" onclick="setStyle('positron',this)" title="Blanc">⬜</button>
+      <button class="style-btn" onclick="setStyle('toner',this)" title="Noir">⬛</button>
+      <button class="style-btn" onclick="setStyle('satellite',this)" title="Satellite">🛰</button>
+      <button class="style-btn" onclick="openSettings()">⚙️</button>
+    </div>
+    <div id="legend">
+      <div class="legend-row"><div class="legend-dot" style="background:var(--accent)"></div>Prospecté récemment</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--green)"></div>À reprospecter</div>
+    </div>
+  </div>
+  <div id="filters-bar">
+    <button class="filter-chip" id="btn-reset" onclick="resetFilters()" style="display:none;background:#fff3ec;border-color:var(--accent);color:var(--accent);font-weight:600;">✕ Effacer</button>
+    <select class="filter-chip" id="filter-user" onchange="applyFilters()" style="display:none;"><option value="">Tous les commerciaux</option></select>
+    <select class="filter-chip" id="filter-month" onchange="applyFilters()"><option value="">Tous les mois</option></select>
+    <select class="filter-chip" id="filter-state" onchange="applyFilters()">
+      <option value="">Tous les états</option>
+      <option value="orange">🟠 Récent</option>
+      <option value="green">🟢 À reprospecter</option>
+    </select>
+  </div>
+  <div id="selector-title" onclick="toggleList()">
+    Zones prospectées <span class="selector-badge" id="count-badge">…</span> <span id="selector-chevron">▼</span>
+  </div>
+  <div id="street-list"></div>
+</div>
+<div id="loader-overlay"><div class="loader-ring"></div><div id="loader-text">Chargement…</div></div>
+<div id="access-denied"><div class="icon">🔒</div><h2 id="access-msg">Accès non autorisé</h2><p id="access-sub">Ce lien n'est pas valide.</p></div>
+<div id="settings-panel">
+  <h2>⚙️ Paramètres</h2>
+  <div class="settings-section">
+    <div class="settings-label">Délai passage orange → vert</div>
+    <div class="settings-desc">Une zone devient verte après combien de mois ?</div>
+    <div class="months-grid" id="months-grid"></div>
+  </div>
+  <div class="settings-section">
+    <div class="settings-label">Rayon des halos</div>
+    <div class="settings-desc">Taille du cercle autour de chaque zone prospectée.</div>
+    <div class="months-grid" id="radius-grid"></div>
+  </div>
+  <button id="btn-settings-close" onclick="closeSettings()">Enregistrer et fermer</button>
+</div>
+<script>
+// Premier chargement rapide depuis GitHub raw
+const DATA_URL   = 'https://raw.githubusercontent.com/Maxime-Dif/MapHalo/main/data.json';
+// Polling depuis Apps Script (toujours à jour, sans cache)
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxzrwi5ADm8l3drzwTKqgUTkcZW6ygRw_6P5tsHvjBKRv8k5KxqzvDChk5gD9vQSk9i8A/exec';
+
+const urlRowId = (()=>{
+  const p = new URLSearchParams(window.location.search);
+  if(p.get('rowid')) return p.get('rowid');
+  const parts = window.location.pathname.replace(/\/+$/,'').split('/');
+  const last = parts[parts.length-1];
+  return (last && last!=='MapHalo' && last!=='index.html') ? last : null;
+})();
+
+let greenAfterMonths = parseInt(localStorage.getItem('greenAfterMonths')||'6');
+let haloRadius       = parseInt(localStorage.getItem('haloRadius')||'600');
+let allZones=[], filteredZones=[];
+let lastUpdated = '';
+let isAdminUser = true;
+let currentUserName = '';
+
+// ── STYLES ────────────────────────────────────────────────
+const STYLES = {
+  positron:  'https://tiles.openfreemap.org/styles/positron',
+  toner:     'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  satellite: {version:8,sources:{ign:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'],tileSize:256,maxzoom:19}},layers:[{id:'bg',type:'background',paint:{'background-color':'#000'}},{id:'ign',type:'raster',source:'ign'}]}
+};
+
+const map = new maplibregl.Map({
+  container:'map', style:STYLES.positron,
+  center:[2.5,46.5], zoom:5, attributionControl:false
+});
+
+function setStyle(s, btn){
+  document.querySelectorAll('.style-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  clearLayers();
+  map.setStyle(STYLES[s]);
+  map.once('idle', renderMap);
+}
+
+// ── MARKERS DOM ───────────────────────────────────────────
+let haloMarkers=[], dotMarkers=[];
+
+function clearLayers(){
+  haloMarkers.forEach(m=>m.remove()); haloMarkers=[];
+  dotMarkers.forEach(m=>m.remove());  dotMarkers=[];
+  ['layer-dot-o','layer-dot-g'].forEach(id=>{ try{ if(map.getLayer(id)) map.removeLayer(id); }catch(e){} });
+  ['src-orange','src-green'].forEach(id=>{ try{ if(map.getSource(id)) map.removeSource(id); }catch(e){} });
+}
+
+function renderMap(){
+  if(!map.loaded()||!map.isStyleLoaded()) return;
+  clearLayers();
+
+  const oFeats=[], gFeats=[];
+  const zoom = map.getZoom();
+  const pxPerMeter = Math.pow(2,zoom)/(156543.03392*0.682);
+
+  filteredZones.forEach((z,i)=>{
+    if(!z.lat||!z.lon) return;
+    const green = isGreen(z.date);
+    const color = green ? '#22c55e' : '#f07020';
+    const colorRgb = green ? '34,197,94' : '240,112,32';
+    const sizePx = Math.max(32, Math.min(700, haloRadius*pxPerMeter*2));
+
+    // Halo DOM — centrage parfait via transform négatif
+    const el = document.createElement('div');
+    el.className = 'halo-el';
+    el.style.cssText = `width:${sizePx}px;height:${sizePx}px;`
+      + `position:absolute;`
+      + `left:0;top:0;`
+      + `transform:translate(-50%,-50%);`
+      + `border-radius:50%;`
+      + `pointer-events:none;`
+      + `background:radial-gradient(circle, rgba(${colorRgb},.75) 0%, rgba(${colorRgb},.55) 35%, rgba(${colorRgb},.25) 65%, transparent 80%);`
+      + `border:2.5px solid rgba(${colorRgb},.9);`
+      + `box-shadow:0 0 ${sizePx*0.15}px rgba(${colorRgb},.5);`
+      + `animation-delay:${(i*0.25)%1.6}s;`;
+    const hm = new maplibregl.Marker({element:el, anchor:'top-left'}).setLngLat([z.lon,z.lat]).addTo(map);
+    hm._zoneIdx = i;
+    haloMarkers.push(hm);
+
+    const f={type:'Feature',geometry:{type:'Point',coordinates:[z.lon,z.lat]},
+      properties:{label:z.label||'',userName:z.userName||'',date:z.date||'',lat:z.lat,lon:z.lon,idx:i}};
+    green ? gFeats.push(f) : oFeats.push(f);
+  });
+
+  map.off('zoom', updateHaloSizes);
+  map.on('zoom', updateHaloSizes);
+
+  function addDotLayer(srcId, layerId, color, feats){
+    if(!feats.length) return;
+    map.addSource(srcId,{type:'geojson',data:{type:'FeatureCollection',features:feats}});
+    map.addLayer({id:layerId,type:'circle',source:srcId,paint:{
+      'circle-radius':7,'circle-color':color,
+      'circle-stroke-color':'#fff','circle-stroke-width':2.5,
+      'circle-pitch-alignment':'map'
+    }});
+    map.on('click',layerId,e=>{
+      const p=e.features[0].properties;
+      const lbl=p.label||('📍 '+parseFloat(p.lat).toFixed(4)+', '+parseFloat(p.lon).toFixed(4));
+      const dt=new Date(p.date);
+      const ds=isNaN(dt)?'':dt.toLocaleDateString('fr-FR');
+      const meta=[p.userName,ds].filter(Boolean).join(' · ');
+      new maplibregl.Popup({closeButton:false,offset:12,maxWidth:'300px'})
+        .setLngLat(e.lngLat)
+        .setHTML('<div class="popup-label">'+lbl+'</div>'+(meta?'<div class="popup-meta">'+meta+'</div>':''))
+        .addTo(map);
+      const item=document.getElementById('zi-'+p.idx);
+      if(!item) return;
+      if(!document.getElementById('street-list').classList.contains('open')) toggleList();
+      setTimeout(()=>{item.scrollIntoView({behavior:'smooth',block:'center'});item.style.background='#fff9f5';setTimeout(()=>item.style.background='',1200);},400);
+    });
+    map.on('mouseenter',layerId,()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave',layerId,()=>map.getCanvas().style.cursor='');
+  }
+
+  addDotLayer('src-orange','layer-dot-o','#f07020',oFeats);
+  addDotLayer('src-green', 'layer-dot-g','#22c55e',gFeats);
+
+  const pts=filteredZones.filter(z=>z.lat&&z.lon).map(z=>[z.lon,z.lat]);
+  if(pts.length===1) map.flyTo({center:pts[0],zoom:14,duration:800});
+  else if(pts.length>1){
+    const b=pts.reduce((b,p)=>b.extend(p),new maplibregl.LngLatBounds(pts[0],pts[0]));
+    map.fitBounds(b,{padding:60,maxZoom:14,duration:800});
+  }
+}
+
+function updateHaloSizes(){
+  const zoom=map.getZoom();
+  const pxPerMeter=Math.pow(2,zoom)/(156543.03392*0.682);
+  haloMarkers.forEach(m=>{
+    const el=m.getElement();
+    const sizePx=Math.max(32,Math.min(700,haloRadius*pxPerMeter*2));
+    el.style.width=sizePx+'px';
+    el.style.height=sizePx+'px';
+    el.style.boxShadow='0 0 '+(sizePx*0.15)+'px rgba(0,0,0,.3)';
+  });
+}
+
+// ── GÉOCODAGE INVERSE ─────────────────────────────────────
+async function reverseGeocodeAll(zones){
+  const todo=zones.filter(z=>z.lat&&z.lon&&!z.label);
+  for(let i=0;i<todo.length;i+=5){
+    await Promise.all(todo.slice(i,i+5).map(async z=>{
+      try{
+        const r=await fetch('https://api-adresse.data.gouv.fr/reverse/?lon='+z.lon+'&lat='+z.lat);
+        const j=await r.json();
+        const f=j.features&&j.features[0];
+        if(f) z.label=f.properties.label;
+      }catch(e){}
+    }));
+  }
+}
+
+// ── POLLING 30s ───────────────────────────────────────────
+function startPolling(){
+  setInterval(async()=>{
+    try{
+      const r=await fetch(SHEETS_URL+'?action=zones&t='+Date.now());
+      const data=await r.json();
+      if(!data.zones||!data.updated) return;
+      if(data.updated===lastUpdated) return; // pas de changement
+      lastUpdated=data.updated;
+      const newZones=data.zones.map(z=>({...z,userName:(z.userName||'').trim().replace(/\s+/g,' ')}));
+      // Appliquer filtre user si non admin
+      const filtered=isAdminUser?newZones:newZones.filter(z=>z.userName===currentUserName);
+      // Géocoder les nouvelles zones sans label
+      await reverseGeocodeAll(filtered);
+      allZones=filtered;
+      // Reconstruire filtres sans perdre la sélection courante
+      const uVal=document.getElementById('filter-user').value;
+      const mVal=document.getElementById('filter-month').value;
+      if(isAdminUser) document.getElementById('filter-user').innerHTML='<option value="">Tous les commerciaux</option>';
+      document.getElementById('filter-month').innerHTML='<option value="">Tous les mois</option>';
+      buildFilters();
+      if(isAdminUser) document.getElementById('filter-user').value=uVal;
+      document.getElementById('filter-month').value=mVal;
+      applyFilters();
+    }catch(e){}
+  }, 30000);
+}
+
+// ── INIT ──────────────────────────────────────────────────
+async function init(){
+  if(!urlRowId){showDenied('Lien invalide','Aucun identifiant dans l\'URL.');return;}
+  try{
+    // Chargement initial rapide depuis GitHub
+    const r=await fetch(DATA_URL+'?t='+Date.now());
+    const data=await r.json();
+    lastUpdated=data.updated||'';
+    allZones=(data.zones||[]).map(z=>({...z,userName:(z.userName||'').trim().replace(/\s+/g,' ')}));
+
+    // Auth D'ABORD — rien n'est affiché avant de connaître le rôle
+    document.getElementById('loader-text').textContent='Vérification…';
+    fetch(SHEETS_URL+'?rowId='+encodeURIComponent(urlRowId))
+      .then(r=>r.json()).then(auth=>{
+        if(auth.error==='inactive'){showDenied('Statut inactif','Votre compte n\'est pas actif.');return;}
+        if(auth.error==='notfound'){showDenied('Accès refusé','Identifiant non reconnu.');return;}
+        isAdminUser=!!auth.isAdmin;
+        currentUserName=(auth.currentUser||'').trim();
+        if(isAdminUser){
+          document.getElementById('filter-user').style.display='';
+        } else {
+          allZones=allZones.filter(z=>z.userName===currentUserName);
+        }
+        buildFilters();
+        document.getElementById('loader-overlay').style.display='none';
+        if(map.loaded()){applyFilters();}else{map.once('load',()=>applyFilters());}
+        reverseGeocodeAll(allZones).then(()=>renderList());
+        startPolling();
+      }).catch(()=>{
+        // Fallback si auth échoue réseau : on cache tout par sécurité
+        showDenied('Erreur de connexion','Impossible de vérifier votre accès.');
+      });
+  }catch(e){showDenied('Erreur','Impossible de charger les données.');}
+}
+
+function showDenied(t,s){
+  document.getElementById('loader-overlay').style.display='none';
+  document.getElementById('access-msg').textContent=t;
+  document.getElementById('access-sub').textContent=s;
+  document.getElementById('access-denied').style.display='flex';
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function getMonthKey(d){
+  if(!d) return '';
+  const p=d.split(' ')[0].split('/');
+  if(p.length===3) return p[1]+'/'+p[2];
+  const dt=new Date(d);
+  if(!isNaN(dt)) return String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
+  return '';
+}
+
+function isGreen(d){
+  if(!d) return false;
+  let dt;
+  const p=d.split(' ')[0].split('/');
+  if(p.length===3) dt=new Date(+p[2],+p[1]-1,+p[0]);
+  else dt=new Date(d);
+  if(isNaN(dt)) return false;
+  const diff=(new Date().getFullYear()-dt.getFullYear())*12+(new Date().getMonth()-dt.getMonth());
+  return diff>=greenAfterMonths;
+}
+
+// ── FILTRES ───────────────────────────────────────────────
+function buildFilters(){
+  const uS=document.getElementById('filter-user');
+  const mS=document.getElementById('filter-month');
+  [...new Set(allZones.map(z=>z.userName).filter(Boolean))].sort()
+    .forEach(u=>{const o=document.createElement('option');o.value=u;o.textContent=u;uS.appendChild(o);});
+  [...new Set(allZones.map(z=>getMonthKey(z.date)).filter(Boolean))].sort().reverse()
+    .forEach(m=>{
+      const [mm,yy]=m.split('/');
+      const o=document.createElement('option');o.value=m;
+      o.textContent=new Date(+yy,+mm-1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+      mS.appendChild(o);
+    });
+}
+
+function applyFilters(){
+  const uF=document.getElementById('filter-user').value.trim();
+  const mF=document.getElementById('filter-month').value;
+  const sF=document.getElementById('filter-state').value;
+  document.getElementById('btn-reset').style.display=(uF||mF||sF)?'block':'none';
+  filteredZones=allZones.filter(z=>{
+    if(uF && z.userName.trim().replace(/\s+/g,' ')!==uF) return false;
+    if(mF && getMonthKey(z.date)!==mF) return false;
+    if(sF==='orange' && isGreen(z.date)) return false;
+    if(sF==='green' && !isGreen(z.date)) return false;
+    return true;
+  });
+  renderMap(); renderList();
+}
+
+function resetFilters(){
+  ['filter-user','filter-month','filter-state'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('btn-reset').style.display='none';
+  filteredZones=[...allZones];
+  renderMap(); renderList();
+}
+
+// ── LISTE ─────────────────────────────────────────────────
+const PAGE_SIZE=6; let currentPage=0;
+function renderList(){currentPage=0;renderPage();}
+function renderPage(){
+  const el=document.getElementById('street-list'); el.innerHTML='';
+  document.getElementById('count-badge').textContent=filteredZones.length;
+  const total=filteredZones.length, pages=Math.ceil(total/PAGE_SIZE);
+  const start=currentPage*PAGE_SIZE;
+  filteredZones.slice(start,start+PAGE_SIZE).forEach((z,idx)=>{
+    const i=start+idx, green=isGreen(z.date);
+    const item=document.createElement('div'); item.className='street-item'; item.id='zi-'+i;
+    const dt=new Date(z.date), ds=isNaN(dt)?'':dt.toLocaleDateString('fr-FR');
+    const lbl=z.label||(z.lat&&z.lon?z.lat.toFixed(5)+', '+z.lon.toFixed(5):'—');
+    item.innerHTML='<div class="street-dot '+(green?'green':'orange')+'"></div>'
+      +'<div class="street-info"><div class="street-name">'+lbl+'</div>'
+      +'<div class="street-meta">'+(z.userName||'')+(ds?' · '+ds:'')+'</div></div>';
+    item.onclick=()=>{if(z.lat&&z.lon) map.flyTo({center:[z.lon,z.lat],zoom:15,duration:600});};
+    el.appendChild(item);
+  });
+  if(pages>1){
+    const pag=document.createElement('div');
+    pag.style.cssText='display:flex;justify-content:center;gap:6px;padding:10px 8px 4px;';
+    for(let p=0;p<pages;p++){
+      const btn=document.createElement('button'); btn.textContent=p+1;
+      btn.style.cssText='all:unset;width:28px;height:28px;border-radius:8px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;'+(p===currentPage?'background:var(--accent);color:#fff;':'background:#fff;border:1.5px solid var(--border);color:var(--ink2);');
+      btn.onclick=()=>{currentPage=p;renderPage();};
+      pag.appendChild(btn);
+    }
+    el.appendChild(pag);
+  }
+}
+
+function toggleList(){
+  const list=document.getElementById('street-list'),open=list.classList.toggle('open');
+  document.getElementById('selector-chevron').textContent=open?'▲':'▼';
+}
+
+// ── PARAMÈTRES ────────────────────────────────────────────
+function openSettings(){
+  const mg=document.getElementById('months-grid'); mg.innerHTML='';
+  for(let m=1;m<=12;m++){
+    const b=document.createElement('button');
+    b.className='month-btn'+(m===greenAfterMonths?' active':'');
+    b.textContent=m+' mois'; b.dataset.val=m;
+    b.onclick=function(){
+      greenAfterMonths=parseInt(this.dataset.val);
+      localStorage.setItem('greenAfterMonths',greenAfterMonths);
+      mg.querySelectorAll('.month-btn').forEach(x=>x.classList.toggle('active',parseInt(x.dataset.val)===greenAfterMonths));
+    };
+    mg.appendChild(b);
+  }
+  const rg=document.getElementById('radius-grid'); rg.innerHTML='';
+  [100,200,400,600,800,1000,1200,1400,1600,1800,2000].forEach(r=>{
+    const b=document.createElement('button');
+    b.className='month-btn'+(r===haloRadius?' active':'');
+    b.textContent=r>=1000?(r/1000)+'km':r+'m'; b.dataset.val=r;
+    b.onclick=function(){
+      haloRadius=parseInt(this.dataset.val);
+      localStorage.setItem('haloRadius',haloRadius);
+      rg.querySelectorAll('.month-btn').forEach(x=>x.classList.toggle('active',parseInt(x.dataset.val)===haloRadius));
+    };
+    rg.appendChild(b);
+  });
+  document.getElementById('settings-panel').style.display='flex';
+}
+
+function closeSettings(){
+  document.getElementById('settings-panel').style.display='none';
+  map.resize();
+  if(map.loaded()&&map.isStyleLoaded()){applyFilters();}
+  else{map.once('idle',applyFilters);}
+}
+
+// ── LONG PRESS → adresse ──────────────────────────────────
+let _pressTimer=null;
+map.on('mousedown',e=>{_pressTimer=setTimeout(()=>showAddress(e.lngLat),600);});
+map.on('mouseup',()=>clearTimeout(_pressTimer));
+map.on('mousemove',()=>clearTimeout(_pressTimer));
+map.on('touchstart',e=>{if(e.points&&e.points.length>1)return;_pressTimer=setTimeout(()=>showAddress(e.lngLat),600);});
+map.on('touchend',()=>clearTimeout(_pressTimer));
+map.on('touchmove',()=>clearTimeout(_pressTimer));
+function showAddress(lngLat){
+  fetch('https://api-adresse.data.gouv.fr/reverse/?lon='+lngLat.lng+'&lat='+lngLat.lat)
+    .then(r=>r.json()).then(j=>{
+      const f=j.features&&j.features[0];
+      const label=f?f.properties.label:'Adresse introuvable';
+      new maplibregl.Popup({closeButton:true,maxWidth:'280px'})
+        .setLngLat(lngLat)
+        .setHTML('<div class="popup-label">📍 '+label+'</div>')
+        .addTo(map);
+    }).catch(()=>{});
+}
+
+init();
+</script>
+</body>
+</html>
