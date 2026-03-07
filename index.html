@@ -389,7 +389,7 @@ async function init(){
           // Afficher le nom du user à gauche des filtres
           const nameChip=document.createElement('span');
           nameChip.style.cssText='font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;flex-shrink:0;padding:0 4px;';
-          nameChip.textContent='👤 '+currentUserName;
+          nameChip.textContent=''+currentUserName;
           const bar=document.getElementById('filters-bar');
           bar.insertBefore(nameChip,bar.firstChild);
           // Filtre silencieux — la carte se met à jour sans loader
