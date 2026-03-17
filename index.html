@@ -142,7 +142,7 @@ let currentUserName = '';
 const STYLES = {
   positron:  'https://tiles.openfreemap.org/styles/positron',
   toner:     'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-  satellite: {version:8,sources:{ign:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'],tileSize:256,maxzoom:19}},layers:[{id:'bg',type:'background',paint:{'background-color':'#000'}},{id:'ign',type:'raster',source:'ign'}]}
+  satellite: {version:8,glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',sources:{ign:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'],tileSize:256,maxzoom:19}},layers:[{id:'bg',type:'background',paint:{'background-color':'#000'}},{id:'ign',type:'raster',source:'ign'}]}
 };
 
 const map = new maplibregl.Map({
