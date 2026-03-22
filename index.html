@@ -155,14 +155,7 @@ function setStyle(s,btn){
   if(_haloTimer){clearInterval(_haloTimer);_haloTimer=null;}
   _layersInitialized=false;
   map.setStyle(STYLES[s]);
-  map.once('idle',()=>{
-    if(s==='satellite'){
-      if(!map.getSource('labels')) map.addSource('labels',{type:'vector',url:'https://tiles.openfreemap.org/planet'});
-      if(!map.getLayer('labels-road')) map.addLayer({id:'labels-road',type:'symbol',source:'labels','source-layer':'transportation_name',layout:{'text-field':['get','name'],'text-size':11,'text-font':['Noto Sans Regular']},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
-      if(!map.getLayer('labels-place')) map.addLayer({id:'labels-place',type:'symbol',source:'labels','source-layer':'place',filter:['in','class','city','town','village'],layout:{'text-field':['get','name'],'text-size':13,'text-font':['Noto Sans Regular']},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':2}});
-    }
-    renderMap();fitToZones();
-  });
+ map.once('idle',()=>{renderMap();});
 }
 
 let _haloTimer=null, _layersInitialized=false;
@@ -592,11 +585,23 @@ function showAddress(lngLat){
   fetch('https://api-adresse.data.gouv.fr/reverse/?lon='+lngLat.lng+'&lat='+lngLat.lat)
     .then(r=>r.json()).then(j=>{
       const f=j.features&&j.features[0];
-      const label=f?f.properties.label:'Adresse introuvable';
-      new maplibregl.Popup({closeButton:true,maxWidth:'280px'})
-        .setLngLat(lngLat)
-        .setHTML('<div class="popup-label">📍 '+label+'</div>')
-        .addTo(map);
+      if(!f){new maplibregl.Popup({closeButton:true,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 Adresse introuvable</div>').addTo(map);return;}
+      const label=f.properties.label;
+      const street=f.properties.street||f.properties.name||'';
+      const city=f.properties.city||'';
+      const popup=new maplibregl.Popup({closeButton:true,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 '+label+'</div><div class="popup-meta" id="ban-count">…</div>').addTo(map);
+      if(street&&city){
+        fetch('https://api-adresse.data.gouv.fr/search/?q='+encodeURIComponent(street+' '+city)+'&type=housenumber&limit=1&autocomplete=0')
+          .then(r=>r.json()).then(j2=>{
+            const el=document.getElementById('ban-count');
+            if(el) el.textContent=(j2.features&&j2.features.length>0?(j2.features[0].properties.id?'':''):'')+(j2.header&&j2.header.total_result_count?j2.header.total_result_count+' adresses dans cette rue':'');
+          }).catch(()=>{});
+        fetch('https://api-adresse.data.gouv.fr/search/?q='+encodeURIComponent(street+' '+city)+'&type=housenumber&limit=500&autocomplete=0')
+          .then(r=>r.json()).then(j2=>{
+            const el=document.getElementById('ban-count');
+            if(el) el.textContent=(j2.features?j2.features.length:0)+' adresses dans cette rue';
+          }).catch(()=>{});
+      }
     }).catch(()=>{});
 }
 
