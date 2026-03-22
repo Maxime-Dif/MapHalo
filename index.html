@@ -587,15 +587,10 @@ function showAddress(lngLat){
       const f=j.features&&j.features[0];
       if(!f){new maplibregl.Popup({closeButton:true,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 Adresse introuvable</div>').addTo(map);return;}
       const label=f.properties.label;
-      const street=f.properties.street||f.properties.name||'';
+      const street=(f.properties.street||f.properties.name||'').replace(/^\d+\s*/,'').trim();
       const city=f.properties.city||'';
       const popup=new maplibregl.Popup({closeButton:true,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 '+label+'</div><div class="popup-meta" id="ban-count">…</div>').addTo(map);
       if(street&&city){
-        fetch('https://api-adresse.data.gouv.fr/search/?q='+encodeURIComponent(street+' '+city)+'&type=housenumber&limit=1&autocomplete=0')
-          .then(r=>r.json()).then(j2=>{
-            const el=document.getElementById('ban-count');
-            if(el) el.textContent=(j2.features&&j2.features.length>0?(j2.features[0].properties.id?'':''):'')+(j2.header&&j2.header.total_result_count?j2.header.total_result_count+' adresses dans cette rue':'');
-          }).catch(()=>{});
         fetch('https://api-adresse.data.gouv.fr/search/?q='+encodeURIComponent(street+' '+city)+'&type=housenumber&limit=500&autocomplete=0')
           .then(r=>r.json()).then(j2=>{
             const el=document.getElementById('ban-count');
@@ -604,7 +599,6 @@ function showAddress(lngLat){
       }
     }).catch(()=>{});
 }
-
 init();
 </script>
 </body>
