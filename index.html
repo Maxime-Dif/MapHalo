@@ -596,14 +596,24 @@ function showAddress(lngLat){
       const f=j.features&&j.features[0];
       if(!f){new maplibregl.Popup({closeButton:true,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 Adresse introuvable</div>').addTo(map);return;}
       const label=f.properties.label;
-      const street=(f.properties.street||f.properties.name||'').replace(/^\d+\s*/,'').trim();
       const citycode=f.properties.citycode||'';
+      const fantoir=f.properties.id||'';
       new maplibregl.Popup({closeButton:true,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 '+label+'</div><div class="popup-meta" id="ban-count">…</div>').addTo(map);
-      if(street&&citycode){
-        fetch('https://api-adresse.data.gouv.fr/search/?q='+encodeURIComponent(street)+'&citycode='+citycode+'&type=housenumber&limit=20&autocomplete=0')
-          .then(r=>r.json()).then(j2=>{
+      if(citycode&&fantoir){
+        fetch('https://plateforme.adresse.data.gouv.fr/ban/communes/'+citycode+'/download/csv-legacy/adresses')
+          .then(r=>r.text()).then(csv=>{
+            const lines=csv.split('\n');
+            const headers=lines[0].split(';');
+            const idxF=headers.indexOf('id_fantoir');
+            const fId=fantoir.split('_')[1]||'';
+            if(idxF===-1){const el=document.getElementById('ban-count');if(el)el.textContent='';return;}
+            let count=0;
+            for(let i=1;i<lines.length;i++){
+              const cols=lines[i].split(';');
+              if(cols[idxF]===fId) count++;
+            }
             const el=document.getElementById('ban-count');
-            if(el) el.textContent=(j2.features?j2.features.length:0)+' adresses dans cette rue';
+            if(el) el.textContent=count+' adresses dans cette rue';
           }).catch(()=>{const el=document.getElementById('ban-count');if(el)el.textContent='';});
       }
     }).catch(()=>{});
