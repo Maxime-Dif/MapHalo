@@ -131,11 +131,12 @@ const urlRowId = (()=>{
   return (last && last!=='MapHalo' && last!=='index.html') ? last : null;
 })();
 
-let greenAfterMonths = parseInt(localStorage.getItem('greenAfterMonths')||'6');
-let haloRadius       = parseInt(localStorage.getItem('haloRadius')||'600');
+let greenAfterMonths = 6;
+let haloRadius       = 600;
 let allZones=[], filteredZones=[];
 let lastSha = '';
-let isAdminUser = true;
+let isAdminUser = true; 
+let _settingsFromServer = false;
 let currentUserName = '';
 
 const STYLES = {
@@ -274,6 +275,9 @@ function startPolling(){
       if(!data||data.error) return;
       if(data._sha===lastSha) return; // rien de changé
       lastSha=data._sha||'';
+      if(data.greenAfterMonths) greenAfterMonths=data.greenAfterMonths;
+if(data.haloRadius) haloRadius=data.haloRadius;
+updateLayerRadius();
       if(!data.isActive){showDenied('Statut inactif','Votre compte n\'est plus actif.');return;}
       const newZones=(data.zones||[]).map(z=>({...z,userName:(z.userName||'').trim().replace(/\s+/g,' ')}))
         .sort((a,b)=>{
@@ -393,8 +397,10 @@ async function init(){
       nameChip.textContent=currentUserName;
       document.getElementById('filters-bar').insertBefore(nameChip,document.getElementById('filters-bar').firstChild);
       document.getElementById('filter-user').style.display='none';
+      document.querySelector('.style-btn[onclick="openSettings()"]').style.display='none';
     }else{
       document.getElementById('filter-user').style.display='';
+      document.querySelector('.style-btn[onclick="openSettings()"]').style.display='';
     }
 
     stopLoadingAnimation(()=>{
@@ -416,6 +422,9 @@ async function init(){
         if(!d2||d2.error||!d2.zones) return;
         if(d2._sha===lastSha) return; // déjà à jour
         lastSha=d2._sha||'';
+        if(d2.greenAfterMonths) greenAfterMonths=d2.greenAfterMonths;
+if(d2.haloRadius) haloRadius=d2.haloRadius;
+updateLayerRadius();
         if(!d2.isActive){showDenied('Statut inactif','Votre compte n\'est plus actif.');return;}
         const z2=(d2.zones||[])
           .map(z=>({...z,userName:(z.userName||'').trim().replace(/\s+/g,' ')}))
@@ -549,7 +558,6 @@ function openSettings(){
     b.textContent=m+' mois';b.dataset.val=m;
     b.onclick=function(){
       greenAfterMonths=parseInt(this.dataset.val);
-      localStorage.setItem('greenAfterMonths',greenAfterMonths);
       mg.querySelectorAll('.month-btn').forEach(x=>x.classList.toggle('active',parseInt(x.dataset.val)===greenAfterMonths));
     };
     mg.appendChild(b);
@@ -561,7 +569,6 @@ function openSettings(){
     b.textContent=r>=1000?(r/1000)+'km':r+'m';b.dataset.val=r;
     b.onclick=function(){
       haloRadius=parseInt(this.dataset.val);
-      localStorage.setItem('haloRadius',haloRadius);
       rg.querySelectorAll('.month-btn').forEach(x=>x.classList.toggle('active',parseInt(x.dataset.val)===haloRadius));
     };
     rg.appendChild(b);
@@ -572,6 +579,8 @@ function openSettings(){
 function closeSettings(){
   document.getElementById('settings-panel').style.display='none';
   applyFilters();
+  fetch(SHEETS_URL+'?action=settings&greenAfterMonths='+greenAfterMonths+'&haloRadius='+haloRadius+'&rowid='+encodeURIComponent(urlRowId))
+    .catch(()=>{});
 }
 
 let _pressTimer=null;
