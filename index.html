@@ -403,16 +403,23 @@ async function init(){
       document.querySelector('.style-btn[onclick="openSettings()"]').style.display='';
     }
 
-    stopLoadingAnimation(()=>{
-      buildFilters();
-      if(map.loaded()&&map.isStyleLoaded()){
-        applyFilters();fitToZones();
-        setTimeout(()=>renderMap(),600); // backup re-render
-      }else{
-        map.once('idle',()=>{applyFilters();fitToZones();setTimeout(()=>renderMap(),600);});
-      }
-    });
-    reverseGeocodeAll(allZones).then(()=>{renderMap();renderList();});
+    // Récupérer les vrais paramètres via Apps Script avant d'afficher
+    fetch(SHEETS_URL+'?rowid='+encodeURIComponent(urlRowId)+'&t='+Date.now())
+      .then(r=>r.json()).then(d=>{
+        if(d&&d.greenAfterMonths) greenAfterMonths=d.greenAfterMonths;
+        if(d&&d.haloRadius) haloRadius=d.haloRadius;
+      }).catch(()=>{}).finally(()=>{
+        stopLoadingAnimation(()=>{
+          buildFilters();
+          if(map.loaded()&&map.isStyleLoaded()){
+            applyFilters();fitToZones();
+            setTimeout(()=>renderMap(),600);
+          }else{
+            map.once('idle',()=>{applyFilters();fitToZones();setTimeout(()=>renderMap(),600);});
+          }
+        });
+        reverseGeocodeAll(allZones).then(()=>{renderMap();renderList();});
+      });
 
     // Correctif silencieux 3s après — écrase le cache GitHub raw si besoin
     setTimeout(async()=>{
