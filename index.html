@@ -373,7 +373,6 @@ function stopLoadingAnimation(callback){
 async function init(){
   if(!urlRowId){showDenied('Lien invalide','Aucun identifiant dans l\'URL.');return;}
   document.getElementById('loader-overlay').style.display='none';
-  startLoadingAnimation();
   try{
     // Chargement initial via GitHub raw — instantané, pas de token
     const r=await fetch(GITHUB_RAW+'data-'+urlRowId+'.json?t='+Date.now());
@@ -403,23 +402,22 @@ async function init(){
       document.querySelector('.style-btn[onclick="openSettings()"]').style.display='';
     }
 
-    // Récupérer les vrais paramètres via Apps Script avant d'afficher
+    // Paramètres frais en arrière-plan
     fetch(SHEETS_URL+'?rowid='+encodeURIComponent(urlRowId)+'&t='+Date.now())
       .then(r=>r.json()).then(d=>{
         if(d&&d.greenAfterMonths) greenAfterMonths=d.greenAfterMonths;
         if(d&&d.haloRadius) haloRadius=d.haloRadius;
-      }).catch(()=>{}).finally(()=>{
-        stopLoadingAnimation(()=>{
-          buildFilters();
-          if(map.loaded()&&map.isStyleLoaded()){
-            applyFilters();fitToZones();
-            setTimeout(()=>renderMap(),600);
-          }else{
-            map.once('idle',()=>{applyFilters();fitToZones();setTimeout(()=>renderMap(),600);});
-          }
-        });
-        reverseGeocodeAll(allZones).then(()=>{renderMap();renderList();});
-      });
+        updateLayerRadius();applyFilters();
+      }).catch(()=>{});
+
+    buildFilters();
+    if(map.loaded()&&map.isStyleLoaded()){
+      applyFilters();fitToZones();
+      setTimeout(()=>renderMap(),600);
+    }else{
+      map.once('idle',()=>{applyFilters();fitToZones();setTimeout(()=>renderMap(),600);});
+    }
+    reverseGeocodeAll(allZones).then(()=>{renderMap();renderList();});
 
     // Correctif silencieux 3s après — écrase le cache GitHub raw si besoin
     setTimeout(async()=>{
