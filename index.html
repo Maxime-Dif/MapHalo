@@ -388,9 +388,16 @@ async function init(){
   document.getElementById('loader-overlay').style.display='none';
   try{
     // Chargement initial via GitHub raw — instantané, pas de token
-    const r=await fetch(GITHUB_RAW+'data-'+urlRowId+'.json?t='+Date.now());
-    if(!r.ok){showDenied('Accès refusé','Identifiant non reconnu.');return;}
-    const data=await r.json();
+    let data;
+    try{
+      const r=await fetch(SHEETS_URL+'?rowid='+encodeURIComponent(urlRowId)+'&t='+Date.now());
+      data=await r.json();
+      if(!data||data.error) throw new Error('fallback');
+    }catch(e){
+      const r2=await fetch(GITHUB_RAW+'data-'+urlRowId+'.json?t='+Date.now());
+      if(!r2.ok){showDenied('Accès refusé','Identifiant non reconnu.');return;}
+      data=await r2.json();
+    }
     if(!data.isActive){showDenied('Statut inactif','Votre compte n\'est pas actif.');return;}
 
     isAdminUser=!!data.isAdmin;
