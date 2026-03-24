@@ -598,13 +598,19 @@ function showAddress(lngLat){
       const label=f.properties.label;
       const street=(f.properties.street||f.properties.name||'').replace(/^\d+\s*/,'').trim();
       const citycode=f.properties.citycode||'';
-      const postcode=f.properties.postcode||'';
       new maplibregl.Popup({closeButton:true,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 '+label+'</div><div class="popup-meta" id="ban-count">…</div>').addTo(map);
       if(street&&citycode){
-        fetch('https://api-adresse.data.gouv.fr/search/?q='+encodeURIComponent(street)+'&citycode='+citycode+'&type=housenumber&limit=100&autocomplete=0')
+        fetch('https://api-adresse.data.gouv.fr/search/?q='+encodeURIComponent(street)+'&citycode='+citycode+'&type=street&limit=1&autocomplete=0')
           .then(r=>r.json()).then(j2=>{
-            const el=document.getElementById('ban-count');
-            if(el){const n=j2.features?j2.features.length:0;el.textContent=n===100?'+de 100 adresses dans cette rue':n+' adresses dans cette rue';}
+            const feat=j2.features&&j2.features[0];
+            if(!feat){const el=document.getElementById('ban-count');if(el)el.textContent='';return;}
+            const voieId=feat.properties.id||'';
+            if(!voieId){const el=document.getElementById('ban-count');if(el)el.textContent='';return;}
+            fetch('https://plateforme.adresse.data.gouv.fr/lookup/'+voieId)
+              .then(r=>r.json()).then(voie=>{
+                const el=document.getElementById('ban-count');
+                if(el) el.textContent=(voie.nbNumeros||0)+' adresses dans cette rue';
+              }).catch(()=>{const el=document.getElementById('ban-count');if(el)el.textContent='';});
           }).catch(()=>{const el=document.getElementById('ban-count');if(el)el.textContent='';});
       }
     }).catch(()=>{});
