@@ -392,6 +392,8 @@ async function init(){
     if(!r.ok){showDenied('Accès refusé','Identifiant non reconnu.');return;}
     const data=await r.json();
     if(!data.isActive){showDenied('Statut inactif','Votre compte n\'est pas actif.');return;}
+    if(data.greenAfterMonths) greenAfterMonths=data.greenAfterMonths;
+    if(data.haloRadius) haloRadius=data.haloRadius;
 
     isAdminUser=!!data.isAdmin;
     currentUserName=(data.currentUser||'').trim();
