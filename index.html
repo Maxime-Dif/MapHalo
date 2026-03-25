@@ -394,6 +394,12 @@ async function init(){
     if(!data.isActive){showDenied('Statut inactif','Votre compte n\'est pas actif.');return;}
     if(data.greenAfterMonths) greenAfterMonths=data.greenAfterMonths;
     if(data.haloRadius) haloRadius=data.haloRadius;
+    fetch(SHEETS_URL+'?action=getSettings&t='+Date.now())
+      .then(r=>r.json()).then(d=>{
+        if(d&&d.greenAfterMonths) greenAfterMonths=d.greenAfterMonths;
+        if(d&&d.haloRadius) haloRadius=d.haloRadius;
+        updateLayerRadius();applyFilters();
+      }).catch(()=>{});
 
     isAdminUser=!!data.isAdmin;
     currentUserName=(data.currentUser||'').trim();
