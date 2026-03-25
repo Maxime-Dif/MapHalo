@@ -607,11 +607,11 @@ function showAddress(lngLat){
   fetch('https://api-adresse.data.gouv.fr/reverse/?lon='+lngLat.lng+'&lat='+lngLat.lat)
     .then(r=>r.json()).then(j=>{
       const f=j.features&&j.features[0];
-      if(!f){new maplibregl.Popup({closeButton:true,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 Adresse introuvable</div>').addTo(map);return;}
+      if(!f){new maplibregl.Popup({closeButton:false,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 Adresse introuvable</div>').addTo(map);return;}
       const label=f.properties.label;
       const street=(f.properties.street||f.properties.name||'').replace(/^\d+\s*/,'').trim();
       const citycode=f.properties.citycode||'';
-      new maplibregl.Popup({closeButton:true,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 '+label+'</div><div class="popup-meta" id="ban-count">…</div>').addTo(map);
+      new maplibregl.Popup({closeButton:false,maxWidth:'280px'}).setLngLat(lngLat).setHTML('<div class="popup-label">📍 '+label+'</div><div class="popup-meta" id="ban-count">…</div>').addTo(map);
       if(street&&citycode){
         fetch('https://api-adresse.data.gouv.fr/search/?q='+encodeURIComponent(street)+'&citycode='+citycode+'&type=street&limit=1&autocomplete=0')
           .then(r=>r.json()).then(j2=>{
