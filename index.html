@@ -388,16 +388,9 @@ async function init(){
   document.getElementById('loader-overlay').style.display='none';
   try{
     // Chargement initial via GitHub raw — instantané, pas de token
-   let data;
-    try{
-      const r=await fetch(SHEETS_URL+'?rowid='+encodeURIComponent(urlRowId)+'&t='+Date.now());
-      data=await r.json();
-      if(!data||data.error||!data.zones) throw new Error('fallback');
-    }catch(e){
-      const r2=await fetch(GITHUB_RAW+'data-'+urlRowId+'.json?t='+Date.now());
-      if(!r2.ok){showDenied('Accès refusé','Identifiant non reconnu.');return;}
-      data=await r2.json();
-    }
+  const r=await fetch(GITHUB_RAW+'data-'+urlRowId+'.json?t='+Date.now());
+    if(!r.ok){showDenied('Accès refusé','Identifiant non reconnu.');return;}
+    const data=await r.json();
     if(!data.isActive){showDenied('Statut inactif','Votre compte n\'est pas actif.');return;}
     if(data.greenAfterMonths) greenAfterMonths=data.greenAfterMonths;
     if(data.haloRadius) haloRadius=data.haloRadius;
@@ -438,7 +431,34 @@ async function init(){
       map.once('idle',()=>{applyFilters();fitToZones();setTimeout(()=>renderMap(),600);});
     }
     reverseGeocodeAll(allZones).then(()=>{renderMap();renderList();});
+// Correctif silencieux 1s après
+    setTimeout(async()=>{
+      try{
+        const r2=await fetch(SHEETS_URL+'?rowid='+encodeURIComponent(urlRowId)+'&t='+Date.now());
+        const d2=await r2.json();
+        if(!d2||d2.error||!d2.zones) return;
+        if(d2._sha===lastSha) return;
+        lastSha=d2._sha||'';
+        if(d2.greenAfterMonths) greenAfterMonths=d2.greenAfterMonths;
+        if(d2.haloRadius) haloRadius=d2.haloRadius;
+        updateLayerRadius();
+        if(!d2.isActive){showDenied('Statut inactif','Votre compte n\'est plus actif.');return;}
+        const z2=(d2.zones||[]).map(z=>({...z,userName:(z.userName||'').trim().replace(/\s+/g,' ')}))
+          .sort((a,b)=>{const da=a.date?new Date(a.date.split('/').reverse().join('-')):new Date(0);const db=b.date?new Date(b.date.split('/').reverse().join('-')):new Date(0);return db-da;});
+        await reverseGeocodeAll(z2);
+        allZones=z2;
+        const uVal=document.getElementById('filter-user').value;
+        const mVal=document.getElementById('filter-month').value;
+        if(isAdminUser) document.getElementById('filter-user').innerHTML='<option value="">Tous les commerciaux</option>';
+        document.getElementById('filter-month').innerHTML='<option value="">Tous les mois</option>';
+        buildFilters();
+        if(isAdminUser) document.getElementById('filter-user').value=uVal;
+        document.getElementById('filter-month').value=mVal;
+        applyFilters();
+      }catch(e){}
+    },1000);
 
+// Polling via Apps Script — token caché côté serveur
     // Polling via Apps Script — token caché côté serveur
     startPolling();
   }catch(e){showDenied('Erreur','Impossible de charger les données.');}
