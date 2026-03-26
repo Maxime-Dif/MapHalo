@@ -601,7 +601,7 @@ map.on('mousedown',e=>{_pressTimer=setTimeout(()=>showAddress(e.lngLat),600);});
 map.on('mouseup',()=>clearTimeout(_pressTimer));
 map.on('mousemove',()=>clearTimeout(_pressTimer));
 map.on('touchstart',e=>{if(e.points&&e.points.length>1)return;_pressTimer=setTimeout(()=>showAddress(e.lngLat),600);});
-map.on('touchend',()=>clearTimeout(_pressTimer));
+map.on('touchend',e=>{clearTimeout(_pressTimer);e.preventDefault&&e.preventDefault();});
 map.on('touchmove',()=>clearTimeout(_pressTimer));
 function showAddress(lngLat){
   fetch('https://api-adresse.data.gouv.fr/reverse/?lon='+lngLat.lng+'&lat='+lngLat.lat)
