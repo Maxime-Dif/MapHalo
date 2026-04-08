@@ -202,7 +202,7 @@ function initLayers(){
     map.on('click',dotId,e=>{
       const p=e.features[0].properties;
       const lbl=p.label||('📍 '+parseFloat(p.lat).toFixed(4)+', '+parseFloat(p.lon).toFixed(4));
-      const dt=new Date(p.date),ds=isNaN(dt)?'':dt.toLocaleDateString('fr-FR');
+      const ds=p.date||'';
       const meta=[p.userName,ds].filter(Boolean).join(' · ');
       new maplibregl.Popup({closeButton:false,offset:12,maxWidth:'300px'})
         .setLngLat(e.lngLat)
@@ -537,7 +537,7 @@ function renderPage(){
   filteredZones.slice(start,start+PAGE_SIZE).forEach((z,idx)=>{
     const i=start+idx,green=isGreen(z.date);
     const item=document.createElement('div');item.className='street-item';item.id='zi-'+i;
-    const dt=new Date(z.date),ds=isNaN(dt)?'':dt.toLocaleDateString('fr-FR');
+   const ds=z.date||'';
     const lbl=z.label||(z.lat&&z.lon?z.lat.toFixed(5)+', '+z.lon.toFixed(5):'—');
     item.innerHTML='<div class="street-dot '+(green?'green':'orange')+'"></div>'
       +'<div class="street-info"><div class="street-name">'+lbl+'</div>'
