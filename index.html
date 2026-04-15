@@ -92,7 +92,6 @@ select.filter-chip{appearance:none;-webkit-appearance:none;padding-right:26px;ba
       <button class="style-btn active" onclick="setStyle('positron',this)" title="Blanc">⬜</button>
       <button class="style-btn" onclick="setStyle('satellite',this)" title="Satellite">🛰</button>
      <button class="style-btn" onclick="openSettings()">⚙️</button>
-<button class="style-btn" onclick="toggleFullscreen()" id="btn-fs">⛶</button>
     </div>
     <div id="legend">
       <div class="legend-row"><div class="legend-dot" style="background:var(--accent)"></div>Prospecté récemment</div>
@@ -672,16 +671,6 @@ document.getElementById('search-input').addEventListener('input',function(){
   },250);
 });
 document.addEventListener('click',e=>{if(!document.getElementById('search-box').contains(e.target)) document.getElementById('search-results').style.display='none';});
-function toggleFullscreen(){
-  const el=document.getElementById('map-wrap');
-  if(!document.fullscreenElement){
-    (el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen).call(el);
-    document.getElementById('btn-fs').textContent='✕';
-  }else{
-    (document.exitFullscreen||document.webkitExitFullscreen).call(document);
-    document.getElementById('btn-fs').textContent='⛶';
-  }
-}
 init();
 </script>
 </body>
