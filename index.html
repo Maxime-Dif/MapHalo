@@ -101,7 +101,8 @@ select.filter-chip{appearance:none;-webkit-appearance:none;padding-right:26px;ba
   <div id="filters-bar">
     <button class="filter-chip" id="btn-reset" onclick="resetFilters()" style="display:none;background:#fff3ec;border-color:var(--accent);color:var(--accent);font-weight:600;">✕ Effacer</button>
     <select class="filter-chip" id="filter-user" onchange="applyFilters()" style="display:none;"><option value="">Tous les commerciaux</option></select>
-    <select class="filter-chip" id="filter-month" onchange="applyFilters()"><option value="">Tous les mois</option></select>
+   <select class="filter-chip" id="filter-month" onchange="applyFilters()"><option value="">Tous les mois</option></select>
+<select class="filter-chip" id="filter-day" onchange="applyFilters()"><option value="">Tous les jours</option></select>
     <select class="filter-chip" id="filter-state" onchange="applyFilters()">
       <option value="">Tous les états</option>
       <option value="orange">🟠 Récent</option>
@@ -460,7 +461,6 @@ async function init(){
     },1000);
 
 // Polling via Apps Script — token caché côté serveur
-    // Polling via Apps Script — token caché côté serveur
     startPolling();
   }catch(e){showDenied('Erreur','Impossible de charger les données.');}
 }
@@ -504,25 +504,39 @@ function buildFilters(){
       o.textContent=new Date(+yy,+mm-1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
       mS.appendChild(o);
     });
+  const dS=document.getElementById('filter-day');
+  dS.innerHTML='<option value="">Tous les jours</option>';
+  const days=[...new Set(allZones.map(z=>(z.date||'').split(' ')[0]).filter(Boolean))].sort().reverse();
+  days.forEach(d=>{
+    const o=document.createElement('option');o.value=d;
+    const parts=d.split('/');
+    const dt=parts.length===3?new Date(+parts[2],+parts[1]-1,+parts[0]):null;
+    const isToday=dt&&dt.toDateString()===new Date().toDateString();
+    o.textContent=isToday?'Aujourd\'hui':d;
+    if(isToday) dS.insertBefore(o,dS.options[1]||null);
+    else dS.appendChild(o);
+  });
 }
 
 function applyFilters(){
   const uF=document.getElementById('filter-user').value.trim();
   const mF=document.getElementById('filter-month').value;
-  const sF=document.getElementById('filter-state').value;
-  document.getElementById('btn-reset').style.display=(uF||mF||sF)?'block':'none';
+ const sF=document.getElementById('filter-state').value;
+  const dF=document.getElementById('filter-day').value;
+  document.getElementById('btn-reset').style.display=(uF||mF||sF||dF)?'block':'none';
   filteredZones=allZones.filter(z=>{
     if(uF&&z.userName.trim().replace(/\s+/g,' ')!==uF) return false;
     if(mF&&getMonthKey(z.date)!==mF) return false;
     if(sF==='orange'&&isGreen(z.date)) return false;
     if(sF==='green'&&!isGreen(z.date)) return false;
+    if(dF&&(z.date||'').split(' ')[0]!==dF) return false;
     return true;
   });
   renderMap();renderList();
 }
 
 function resetFilters(){
-  ['filter-user','filter-month','filter-state'].forEach(id=>document.getElementById(id).value='');
+  ['filter-user','filter-month','filter-state','filter-day'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('btn-reset').style.display='none';
   filteredZones=[...allZones];
   renderMap();renderList();
