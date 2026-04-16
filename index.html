@@ -101,8 +101,8 @@ select.filter-chip{appearance:none;-webkit-appearance:none;padding-right:26px;ba
   <div id="filters-bar">
     <button class="filter-chip" id="btn-reset" onclick="resetFilters()" style="display:none;background:#fff3ec;border-color:var(--accent);color:var(--accent);font-weight:600;">✕ Effacer</button>
     <select class="filter-chip" id="filter-user" onchange="applyFilters()" style="display:none;"><option value="">Tous les commerciaux</option></select>
-   <select class="filter-chip" id="filter-month" onchange="applyFilters()"><option value="">Tous les mois</option></select>
-<select class="filter-chip" id="filter-day" onchange="applyFilters()"><option value="">Tous les jours</option></select>
+   <select class="filter-chip" id="filter-day" onchange="applyFilters()"><option value="">Tous les jours</option></select>
+<select class="filter-chip" id="filter-month" onchange="applyFilters()"><option value="">Tous les mois</option></select>
     <select class="filter-chip" id="filter-state" onchange="applyFilters()">
       <option value="">Tous les états</option>
       <option value="orange">🟠 Récent</option>
@@ -555,9 +555,12 @@ function applyFilters(){
 
 function resetFilters(){
   ['filter-user','filter-month','filter-state','filter-day'].forEach(id=>document.getElementById(id).value='');
-  ['filter-user','filter-month','filter-day','filter-state'].forEach(id=>{
+const bar=document.getElementById('filters-bar');
+  const order=['filter-user','filter-day','filter-month','filter-state'];
+  order.forEach(id=>{
     const el=document.getElementById(id);
     el.style.background='';el.style.borderColor='';el.style.color='';el.style.fontWeight='';
+    bar.appendChild(el);
   });
   document.getElementById('btn-reset').style.display='none';
   filteredZones=[...allZones];
