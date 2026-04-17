@@ -302,13 +302,15 @@ updateLayerRadius();
         });
       await reverseGeocodeAll(newZones);
       allZones=newZones;
-      const uVal=document.getElementById('filter-user').value;
+     const uVal=document.getElementById('filter-user').value;
       const mVal=document.getElementById('filter-month').value;
+      const dVal=document.getElementById('filter-day').value;
       if(isAdminUser) document.getElementById('filter-user').innerHTML='<option value="">Tous les commerciaux</option>';
       document.getElementById('filter-month').innerHTML='<option value="">Tous les mois</option>';
       buildFilters();
       if(isAdminUser) document.getElementById('filter-user').value=uVal;
       document.getElementById('filter-month').value=mVal;
+      document.getElementById('filter-day').value=dVal;
       applyFilters();
     }catch(e){}
   },5000);
@@ -449,13 +451,15 @@ async function init(){
           .sort((a,b)=>{const da=a.date?new Date(a.date.split('/').reverse().join('-')):new Date(0);const db=b.date?new Date(b.date.split('/').reverse().join('-')):new Date(0);return db-da;});
         await reverseGeocodeAll(z2);
         allZones=z2;
-        const uVal=document.getElementById('filter-user').value;
+const uVal=document.getElementById('filter-user').value;
         const mVal=document.getElementById('filter-month').value;
+        const dVal=document.getElementById('filter-day').value;
         if(isAdminUser) document.getElementById('filter-user').innerHTML='<option value="">Tous les commerciaux</option>';
         document.getElementById('filter-month').innerHTML='<option value="">Tous les mois</option>';
         buildFilters();
         if(isAdminUser) document.getElementById('filter-user').value=uVal;
         document.getElementById('filter-month').value=mVal;
+        document.getElementById('filter-day').value=dVal;
         applyFilters();
       }catch(e){}
     },1000);
