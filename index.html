@@ -546,7 +546,7 @@ function applyFilters(){
       el.style.fontWeight='';
     }
   });
-  filteredZones=allZones.filter(z=>{
+ filteredZones=allZones.filter(z=>{
     if(uF&&z.userName.trim().replace(/\s+/g,' ')!==uF) return false;
     if(mF&&getMonthKey(z.date)!==mF) return false;
     if(sF==='orange'&&isGreen(z.date)) return false;
@@ -554,6 +554,7 @@ function applyFilters(){
     if(dF&&(z.date||'').split(' ')[0]!==dF) return false;
     return true;
   });
+  fitToZones();
   renderMap();renderList();
 }
 
