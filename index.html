@@ -569,6 +569,7 @@ const bar=document.getElementById('filters-bar');
   });
   document.getElementById('btn-reset').style.display='none';
   filteredZones=[...allZones];
+  fitToZones();
   renderMap();renderList();
 }
 const PAGE_SIZE=6;let currentPage=0;
