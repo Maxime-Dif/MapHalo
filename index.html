@@ -591,15 +591,34 @@ const ds=parts[0]+(parts[1]?' - '+parts[1].substring(0,5):'');
     item.onclick=()=>{if(z.lat&&z.lon) map.flyTo({center:[z.lon,z.lat],zoom:15,duration:600});};
     el.appendChild(item);
   });
-  if(pages>1){
+ if(pages>1){
     const pag=document.createElement('div');
-    pag.style.cssText='display:flex;justify-content:center;gap:6px;padding:10px 8px 4px;';
-    for(let p=0;p<pages;p++){
-      const btn=document.createElement('button');btn.textContent=p+1;
-      btn.style.cssText='all:unset;width:28px;height:28px;border-radius:8px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;'+(p===currentPage?'background:var(--accent);color:#fff;':'background:#fff;border:1.5px solid var(--border);color:var(--ink2);');
-      btn.onclick=()=>{currentPage=p;renderPage();};
-      pag.appendChild(btn);
-    }
+    pag.style.cssText='display:flex;justify-content:center;align-items:center;gap:4px;padding:10px 8px 4px;';
+    const btnStyle=(active,disabled)=>'all:unset;min-width:28px;height:28px;border-radius:8px;text-align:center;font-size:12px;font-weight:600;cursor:'+(disabled?'default':'pointer')+';font-family:\'DM Sans\',sans-serif;padding:0 6px;box-sizing:border-box;'+(active?'background:#f0ebe0;color:var(--ink);':(disabled?'color:#c0b090;':'color:var(--ink2);'));
+    const mkBtn=(label,page,active,disabled)=>{
+      const b=document.createElement('button');
+      b.textContent=label;b.style.cssText=btnStyle(active,disabled);
+      if(!disabled) b.onclick=()=>{currentPage=page;renderPage();};
+      return b;
+    };
+    pag.appendChild(mkBtn('<',currentPage-1,false,currentPage===0));
+    const pages_to_show=[];
+    pages_to_show.push(0);
+    if(currentPage>2) pages_to_show.push('...');
+    if(currentPage-1>0) pages_to_show.push(currentPage-1);
+    if(currentPage>0&&currentPage<pages-1) pages_to_show.push(currentPage);
+    if(currentPage+1<pages-1) pages_to_show.push(currentPage+1);
+    if(currentPage<pages-3) pages_to_show.push('...');
+    if(pages>1) pages_to_show.push(pages-1);
+    pages_to_show.forEach(p=>{
+      if(p==='...'){
+        const s=document.createElement('span');s.textContent='…';s.style.cssText='font-size:12px;color:var(--ink2);padding:0 2px;';
+        pag.appendChild(s);
+      } else {
+        pag.appendChild(mkBtn(p+1,p,p===currentPage,false));
+      }
+    });
+    pag.appendChild(mkBtn('>',currentPage+1,false,currentPage===pages-1));
     el.appendChild(pag);
   }
 }
