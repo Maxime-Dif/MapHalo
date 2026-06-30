@@ -510,7 +510,11 @@ function buildFilters(){
     });
   const dS=document.getElementById('filter-day');
   dS.innerHTML='<option value="">Tous les jours</option>';
-  const days=[...new Set(allZones.map(z=>(z.date||'').split(' ')[0]).filter(Boolean))].sort().reverse();
+  const days=[...new Set(allZones.map(z=>(z.date||'').split(' ')[0]).filter(Boolean))]
+  .sort((a,b)=>{
+    const pa=a.split('/'), pb=b.split('/');
+    return new Date(+pb[2],+pb[1]-1,+pb[0]) - new Date(+pa[2],+pa[1]-1,+pa[0]);
+  });
   days.forEach(d=>{
     const o=document.createElement('option');o.value=d;
     const parts=d.split('/');
